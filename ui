@@ -1,0 +1,286 @@
+local UILibrary = {}
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+
+-- Default styling
+local defaultStyle = {
+    backgroundColor = Color3.fromRGB(45, 45, 45),
+    textColor = Color3.fromRGB(255, 255, 255),
+    accentColor = Color3.fromRGB(0, 170, 255),
+    cornerRadius = UDim.new(0, 6),
+    fontSize = Enum.FontSize.Size14,
+    font = Enum.Font.Gotham,
+    padding = UDim.new(0, 10)
+}
+
+-- Create the main window
+function UILibrary.CreateWindow(name, parent)
+    local window = Instance.new("ScreenGui")
+    local mainFrame = Instance.new("Frame")
+    local title = Instance.new("TextLabel")
+    local container = Instance.new("ScrollingFrame")
+    local UIListLayout = Instance.new("UIListLayout")
+    local UIPadding = Instance.new("UIPadding")
+    
+    -- Set up window
+    window.Name = name
+    window.Parent = parent or game.Players.LocalPlayer:WaitForChild("PlayerGui")
+    window.ResetOnSpawn = false
+    
+    -- Set up main frame
+    mainFrame.Name = "MainFrame"
+    mainFrame.Parent = window
+    mainFrame.BackgroundColor3 = defaultStyle.backgroundColor
+    mainFrame.Position = UDim2.new(0.5, -150, 0.5, -200)
+    mainFrame.Size = UDim2.new(0, 300, 0, 400)
+    mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+    
+    -- Add corner radius
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = defaultStyle.cornerRadius
+    corner.Parent = mainFrame
+    
+    -- Set up title
+    title.Name = "Title"
+    title.Parent = mainFrame
+    title.BackgroundTransparency = 1
+    title.Size = UDim2.new(1, 0, 0, 30)
+    title.Font = defaultStyle.font
+    title.Text = name
+    title.TextColor3 = defaultStyle.textColor
+    title.TextSize = 18
+    
+    -- Set up container
+    container.Name = "Container"
+    container.Parent = mainFrame
+    container.BackgroundTransparency = 1
+    container.Position = UDim2.new(0, 0, 0, 40)
+    container.Size = UDim2.new(1, 0, 1, -40)
+    container.ScrollBarThickness = 4
+    container.ScrollingDirection = Enum.ScrollingDirection.Y
+    container.CanvasSize = UDim2.new(0, 0, 0, 0)
+    
+    -- Set up layout
+    UIListLayout.Parent = container
+    UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    UIListLayout.Padding = UDim.new(0, 5)
+    
+    UIPadding.Parent = container
+    UIPadding.PaddingLeft = defaultStyle.padding
+    UIPadding.PaddingRight = defaultStyle.padding
+    
+    -- Make window draggable
+    local dragging = false
+    local dragStart = nil
+    local startPos = nil
+    
+    title.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = mainFrame.Position
+        end
+    end)
+    
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - dragStart
+            mainFrame.Position = UDim2.new(
+                startPos.X.Scale,
+                startPos.X.Offset + delta.X,
+                startPos.Y.Scale,
+                startPos.Y.Offset + delta.Y
+            )
+        end
+    end)
+    
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+    
+    -- Methods for adding elements
+    local window = {}
+    
+    function window:AddButton(text, callback)
+        local button = Instance.new("TextButton")
+        button.Name = text
+        button.Parent = container
+        button.BackgroundColor3 = defaultStyle.accentColor
+        button.Size = UDim2.new(1, 0, 0, 30)
+        button.Font = defaultStyle.font
+        button.Text = text
+        button.TextColor3 = defaultStyle.textColor
+        button.TextSize = 14
+        
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = defaultStyle.cornerRadius
+        corner.Parent = button
+        
+        button.MouseButton1Click:Connect(callback)
+        
+        return button
+    end
+    
+    function window:AddToggle(text, default, callback)
+        local toggleFrame = Instance.new("Frame")
+        local toggleButton = Instance.new("TextButton")
+        local toggleIndicator = Instance.new("Frame")
+        local label = Instance.new("TextLabel")
+        local enabled = default or false
+        
+        toggleFrame.Name = text
+        toggleFrame.Parent = container
+        toggleFrame.BackgroundTransparency = 1
+        toggleFrame.Size = UDim2.new(1, 0, 0, 30)
+        
+        toggleButton.Name = "ToggleButton"
+        toggleButton.Parent = toggleFrame
+        toggleButton.AnchorPoint = Vector2.new(1, 0.5)
+        toggleButton.Position = UDim2.new(1, 0, 0.5, 0)
+        toggleButton.Size = UDim2.new(0, 40, 0, 20)
+        toggleButton.BackgroundColor3 = enabled and defaultStyle.accentColor or Color3.fromRGB(100, 100, 100)
+        
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(1, 0)
+        corner.Parent = toggleButton
+        
+        toggleIndicator.Name = "Indicator"
+        toggleIndicator.Parent = toggleButton
+        toggleIndicator.AnchorPoint = Vector2.new(0, 0.5)
+        toggleIndicator.Position = UDim2.new(enabled and 1 or 0, enabled and -18 or 2, 0.5, 0)
+        toggleIndicator.Size = UDim2.new(0, 16, 0, 16)
+        toggleIndicator.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        
+        local indicatorCorner = Instance.new("UICorner")
+        indicatorCorner.CornerRadius = UDim.new(1, 0)
+        indicatorCorner.Parent = toggleIndicator
+        
+        label.Name = "Label"
+        label.Parent = toggleFrame
+        label.BackgroundTransparency = 1
+        label.Position = UDim2.new(0, 0, 0, 0)
+        label.Size = UDim2.new(1, -50, 1, 0)
+        label.Font = defaultStyle.font
+        label.Text = text
+        label.TextColor3 = defaultStyle.textColor
+        label.TextSize = 14
+        label.TextXAlignment = Enum.TextXAlignment.Left
+        
+        toggleButton.MouseButton1Click:Connect(function()
+            enabled = not enabled
+            local toggleTween = TweenService:Create(toggleIndicator, TweenInfo.new(0.2), {
+                Position = UDim2.new(enabled and 1 or 0, enabled and -18 or 2, 0.5, 0)
+            })
+            local colorTween = TweenService:Create(toggleButton, TweenInfo.new(0.2), {
+                BackgroundColor3 = enabled and defaultStyle.accentColor or Color3.fromRGB(100, 100, 100)
+            })
+            toggleTween:Play()
+            colorTween:Play()
+            callback(enabled)
+        end)
+        
+        return toggleFrame
+    end
+    
+    function window:AddSlider(text, min, max, default, callback)
+        local sliderFrame = Instance.new("Frame")
+        local label = Instance.new("TextLabel")
+        local sliderBar = Instance.new("Frame")
+        local sliderFill = Instance.new("Frame")
+        local sliderButton = Instance.new("TextButton")
+        local valueLabel = Instance.new("TextLabel")
+        
+        local value = default or min
+        local dragging = false
+        
+        sliderFrame.Name = text
+        sliderFrame.Parent = container
+        sliderFrame.BackgroundTransparency = 1
+        sliderFrame.Size = UDim2.new(1, 0, 0, 50)
+        
+        label.Name = "Label"
+        label.Parent = sliderFrame
+        label.BackgroundTransparency = 1
+        label.Size = UDim2.new(1, 0, 0, 20)
+        label.Font = defaultStyle.font
+        label.Text = text
+        label.TextColor3 = defaultStyle.textColor
+        label.TextSize = 14
+        label.TextXAlignment = Enum.TextXAlignment.Left
+        
+        sliderBar.Name = "SliderBar"
+        sliderBar.Parent = sliderFrame
+        sliderBar.Position = UDim2.new(0, 0, 0, 25)
+        sliderBar.Size = UDim2.new(1, 0, 0, 4)
+        sliderBar.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+        
+        local barCorner = Instance.new("UICorner")
+        barCorner.CornerRadius = UDim.new(1, 0)
+        barCorner.Parent = sliderBar
+        
+        sliderFill.Name = "SliderFill"
+        sliderFill.Parent = sliderBar
+        sliderFill.Size = UDim2.new((value - min)/(max - min), 0, 1, 0)
+        sliderFill.BackgroundColor3 = defaultStyle.accentColor
+        
+        local fillCorner = Instance.new("UICorner")
+        fillCorner.CornerRadius = UDim.new(1, 0)
+        fillCorner.Parent = sliderFill
+        
+        sliderButton.Name = "SliderButton"
+        sliderButton.Parent = sliderFill
+        sliderButton.AnchorPoint = Vector2.new(1, 0.5)
+        sliderButton.Position = UDim2.new(1, 0, 0.5, 0)
+        sliderButton.Size = UDim2.new(0, 12, 0, 12)
+        sliderButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        
+        local buttonCorner = Instance.new("UICorner")
+        buttonCorner.CornerRadius = UDim.new(1, 0)
+        buttonCorner.Parent = sliderButton
+        
+        valueLabel.Name = "ValueLabel"
+        valueLabel.Parent = sliderFrame
+        valueLabel.BackgroundTransparency = 1
+        valueLabel.Position = UDim2.new(1, -40, 0, 0)
+        valueLabel.Size = UDim2.new(0, 40, 0, 20)
+        valueLabel.Font = defaultStyle.font
+        valueLabel.Text = tostring(value)
+        valueLabel.TextColor3 = defaultStyle.textColor
+        valueLabel.TextSize = 14
+        
+        local function updateSlider(input)
+            local pos = input.Position.X
+            local relativePos = math.clamp((pos - sliderBar.AbsolutePosition.X) / sliderBar.AbsoluteSize.X, 0, 1)
+            local newValue = math.floor(min + ((max - min) * relativePos))
+            
+            value = newValue
+            valueLabel.Text = tostring(newValue)
+            sliderFill.Size = UDim2.new(relativePos, 0, 1, 0)
+            callback(newValue)
+        end
+        
+        sliderButton.MouseButton1Down:Connect(function()
+            dragging = true
+        end)
+        
+        UserInputService.InputChanged:Connect(function(input)
+            if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+                updateSlider(input)
+            end
+        end)
+        
+        UserInputService.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = false
+            end
+        end)
+        
+        return sliderFrame
+    end
+    
+    return window
+end
+
+return UILibrary
